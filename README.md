@@ -48,10 +48,3 @@ Statistical study + tradable rule: buying a dividend low-vol index **below its 2
 
 Python · pandas · numpy · matplotlib (report figures) · openpyxl (Excel outputs for non-technical stakeholders)
 
-## Related
-
-- [ai-finance-workflows](https://github.com/doufucheng/ai-finance-workflows) — AI/agent engineering work (multi-source aggregators, scoring engines, LLM automation)
-
-## License
-
-MIT
