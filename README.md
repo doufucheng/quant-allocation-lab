@@ -1,50 +1,69 @@
+<div align="center">
+
 # Quant Allocation Lab
 
-A production-tested toolbox of **16 quantitative allocation, style-rotation, and timing models** for China markets — risk-parity asset allocation, seven style-rotation engines, and eight market-timing frameworks, all with long-history backtests and institutional-grade documentation of design decisions.
+**16 production quant models for China markets — allocation, style rotation, market timing**
 
-Built and maintained over 8+ years of live buy-side use. Each model is self-contained, documented inline (methodology → signal rules → data lineage → known pitfalls), and runs on standard pandas/numpy.
+8+ years of live buy-side development · Peking University M.Eng. (CS) · Python/pandas
 
-> Backtest results are historical simulations and do not guarantee future returns.
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Models](https://img.shields.io/badge/Models-16-orange)
 
-## Repository Map
+</div>
 
-| Module | Models | What it does |
+---
+
+## Results
+
+### 12-Month Momentum Style Rotation — 20 years, 2006–2026
+
+![Momentum Rotation](results/momentum_rotation_nav.png)
+
+**CAGR 20.5% vs 18.3% equal-weight** over 20.5 years across four style legs (dividend / growth / quality / value). The term-structure analysis in the model docs shows why 12M is the sweet spot: short horizons (2–3M) mean-revert, 6–12M trends persist. **+4.49% annualized excess vs equal weight, 54.6% win rate, only 7.9% monthly turnover** — statistically clean and cheap to trade.
+
+### Asset-Level Dual Momentum — 2014–2025
+
+![Dual Momentum](results/dual_momentum_nav.png)
+
+**CAGR 22.7%** on an ETF universe (equity / bond / commodity / gold legs), absolute+relative momentum gating with cash fallback. The docstring honestly documents fee drag: 20.6% gross → 16.5–18.9% net after real-world costs, plus limit-up/down handling (which added ~1.9pct/yr, an unexpected finding).
+
+### US 10Y Rate Z-Score Style Rotation — 2014–2026
+
+![Rate Rotation](results/rate_rotation_nav.png)
+
+Three-regime switch (rates falling → growth+quality; rising → dividend+value) driven by an 18-month rolling Z-score of the US 10Y yield. Modest but positive excess vs equal weight, with full regime-by-regime attribution and failure-mode analysis documented inline (2006–07 equity-reform bull and 2009 stimulus broke the US-rate transmission chain — the model tells you when it does NOT work).
+
+### Annual-MA Dividend Timing — conditional entry statistics
+
+![Annual-MA Table](results/annual_ma_table.png)
+
+Buying a dividend low-vol index **below its 250-day MA** delivered **+16.8% average 1Y return with 94.9% positive rate** (514 samples, 2015–2026) vs +10.4% / 86.1% unconditionally — a counter-cyclical entry rule with full sample counts and caveats.
+
+> **Disclaimer:** All figures are historical backtests on total-return indices. They do not guarantee future returns.
+
+---
+
+## Model Map
+
+| Module | Models | Highlights |
 |---|---|---|
-| `allocation/` | `allocation_rp` | Risk-parity multi-asset allocation (equity / bond / commodity / gold ETF pool) |
-| `style_rotation/` | 8 models | Style & factor rotation engines: rate-driven, momentum, valuation-spread, Pring cycle, crowding, pair-switch, alpha-composite |
-| `timing/` | 6 models | Market timing: annual-MA dividend rule, dual momentum, gold valuation, index valuation signal, LPPLS bubble detection, bond-futures timing |
+| `allocation/` | risk-parity engine | Equal-risk-contribution across equity / 10Y-30Y bonds / commodities / gold |
+| `style_rotation/` | 8 models | **Momentum** (12M, 20.5y backtest), **rate Z-score** (3-regime), Pring 6-phase cycle, valuation spread, crowding, pair-switch, alpha-composite, combined |
+| `timing/` | 6 models | **Dual momentum** (absolute+relative), **annual-MA rule** (94.9% conditional win rate), gold valuation, LPPLS bubble detection, bond-futures timing, index valuation signal |
 
-## Model Highlights
+Each model file opens with a complete methodology docstring: **hypothesis → indicator construction → signal rules → backtest → known failure modes**, so reviewers can audit the logic without running anything.
 
-### 1. US-Rate-Driven Style Rotation (`style_rotation/rotation_rate.py`)
-The 10Y US Treasury yield as the global pricing anchor for A-share style rotation. An 18-month rolling Z-score of the yield switches between three regimes:
+## Engineering Principles
 
-- **Z > +0.7** (rates falling → risk appetite rising): overweight growth + quality (50/50)
-- **Z < −0.7** (rates rising → risk appetite falling): overweight dividend + value (50/50)
-- Neutral band: equal-weight 25/25/25/25
+1. **Methodology-first docs.** Full reasoning chain inline; Excel-lineage cross-checks where models were first prototyped in spreadsheets.
+2. **No look-ahead.** Rolling windows computed as-of; total-return indices wherever dividends matter.
+3. **Honest attribution.** Every model documents when it fails (regime breaks, fee drag, turnover costs), not just when it works.
+4. **Institutional data hygiene.** Explicit index-code lineage per signal (e.g. h20269.CSI → dividend low-vol total return).
 
-Backtested 2012–2026 against a broad-market total-return benchmark; annual excess ≈ **3.2%**. The inline docs walk through the exact indicator construction, Excel-lineage cross-checks, and why the Z-window is 18 months.
+## Data
 
-### 2. Risk-Parity Allocation Engine (`allocation/allocation_rp.py`)
-Classic equal-risk-contribution allocation across a multi-asset ETF pool (CN dividend, 30Y/10Y government bond indices, commodities, gold), 2003–history weight construction, target-vol targeting optional.
+Models read from a local Wind-derived parquet warehouse (not bundled — institutional data). Adapter layer is isolated in each model's data-loading section; swap in any daily OHLC source to run.
 
-### 3. Pring Six-Phase Cycle Rotation (`style_rotation/rotation_pring.py)
-Maps Martin Pring's six-phase liquidity–economy–inflation cycle onto CN market indicators with a 126-day rolling classifier; rotates equity/bond/commodity legs by phase. Exits at phase six (stagnation).
+## Author
 
-### 4. LPPLS Bubble Detection (`timing/lppls_model.py`)
-Fitted Log-Periodic Power Law Singularity model for bubble/crash regime detection on broad indices.
-
-### 5. Annual-MA Dividend Timing (`timing/annual_ma.py`)
-Statistical study + tradable rule: buying a dividend low-vol index **below its 250-day MA** delivered +16.8% average 1-year returns with 94.9% positive-hit rate (514 samples, 2015–2026) vs. +10.4% / 86.1% unconditionally — with full distribution tables, sample counts, and caveats in the docstring.
-
-## Design Principles
-
-1. **Methodology-first docs.** Every model file opens with the full reasoning chain: hypothesis → indicator construction → signal rules → backtest → known failure modes. Reviewers can audit the logic without running code.
-2. **Data lineage transparency.** Which index code feeds which signal, which total-return series is used, and where the raw data comes from — all documented per model.
-3. **No look-ahead, no survivorship shortcuts.** Rolling windows computed as-of; index histories use total-return versions where dividends matter.
-4. **Excel cross-validation.** Several models were first prototyped in spreadsheets; the Python ports cross-check against the Excel formulas line by line (noted inline).
-
-## Tech Stack
-
-Python · pandas · numpy · matplotlib (report figures) · openpyxl (Excel outputs for non-technical stakeholders)
+**Fucheng Dou** — fund manager (index & multi-asset), 9 years buy-side. PKU M.Eng. CS + B.Sc. Physics. Building quant systems and AI-engineered investment workflows.
 
