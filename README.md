@@ -2,9 +2,7 @@
 
 # Quant Allocation Lab
 
-**A two-layer quantitative investment system for China markets**
-
-Layer 1 · Smart Beta style rotation → Layer 2 · Tactical asset allocation overlay
+**Asset allocation · Style rotation · Timing models for China markets**
 
 8+ years of live buy-side development · PKU M.Eng. CS · Python/pandas
 
@@ -14,29 +12,11 @@ Layer 1 · Smart Beta style rotation → Layer 2 · Tactical asset allocation ov
 
 ---
 
-## The Two-Layer Framework
+# Block 1 · Asset Allocation
 
-```
-┌─────────────────────────────────────────────────┐
-│  Layer 2 · Asset Allocation Overlay             │
-│  Momentum-gated tactical weights across         │
-│  equity / bonds / commodities / gold ETFs       │
-│  → beats fixed all-weather weights by +17%/yr   │
-├─────────────────────────────────────────────────┤
-│  Layer 1 · Smart Beta Style Rotation            │
-│  Dividend / Growth / Quality / Value legs,      │
-│  rotated by rate, momentum, cycle, crowding     │
-│  → beats 4-style equal weight over 20 years     │
-├─────────────────────────────────────────────────┤
-│  Data · Wind total-return indices, no look-ahead│
-└─────────────────────────────────────────────────┘
-```
+Tactical momentum overlay vs fixed all-weather weights (30Y CGB 30% / gold 15% / 10Y CGB 10% / equity styles 25% / commodities 25%), ETF universe, monthly rebalance.
 
-## Annual Returns — Layer by Layer
-
-![Annual Returns](results/annual_returns_bars.png)
-
-### Layer 2 · Tactical Allocation vs Fixed All-Weather Weights (2014–2025)
+### Annual Returns
 
 | Year | Fixed-weight | Tactical overlay | Tactical MaxDD |
 |---:|---:|---:|---:|
@@ -52,14 +32,27 @@ Layer 1 · Smart Beta style rotation → Layer 2 · Tactical asset allocation ov
 | 2023 | +6.4% | **+7.2%** | −13.9% |
 | 2024 | +16.9% | +7.6% | −15.5% |
 | 2025 | +12.0% | **+39.0%** | −18.9% |
-| **CAGR** | 5.4% | **22.7%** | — |
-| Volatility | 4.3% | 21.3% | — |
-| Sharpe | 1.26 | 1.06 | — |
-| MaxDD | −4.6% | −32.3% | — |
+| **CAGR 11.8y** | 5.4% | **22.7%** | — |
+| **Vol / Sharpe** | 4.3% / 1.26 | 21.3% / 1.06 | — |
+| **MaxDD** | **−4.6%** | −32.3% | — |
 
-Fixed-weight book = classic all-weather (30Y CGB 30% / gold 15% / 10Y CGB 10% / equity styles 25% / commodities 25%). Tactical wins 10 of 12 years; fixed book wins on risk-adjusted terms — the two are complements, not substitutes.
+Tactical wins 10 of 12 years; fixed book wins on risk-adjusted terms — complements, not substitutes.
 
-### Layer 1 · Smart Beta Rotation vs Equal Weight (2006–2026)
+### Historical Drawdown
+
+![Allocation Drawdown](results/allocation_drawdown.png)
+
+### Cumulative NAV
+
+![Allocation NAV](results/allocation_layer_nav.png)
+
+---
+
+# Block 2 · Smart Beta Style Rotation
+
+Dividend / Growth / Quality / Value legs rotated by 12-month momentum, monthly. 20.5 years.
+
+### Annual Returns
 
 | Year | Equal-weight | Rotation | Year | Equal-weight | Rotation |
 |---:|---:|---:|---:|---:|---:|
@@ -75,49 +68,58 @@ Fixed-weight book = classic all-weather (30Y CGB 30% / gold 15% / 10Y CGB 10% / 
 | 2015 | +21.4% | +13.8% | 2026 YTD | +9.8% | **+16.5%** |
 | 2016 | +5.2% | +5.0% | **CAGR 20.5y** | 18.3% | **20.5%** |
 
-Rotation wins 13 of 21 years, and crucially the wins concentrate in post-2016 markets (institutional era) — early-year A-share beta dominates both legs.
+Rotation wins 13 of 21 years; wins concentrate post-2016 (institutional era).
+
+### Historical Drawdown
+
+![Rotation Drawdown](results/rotation_drawdown.png)
+
+### Cumulative NAV & Excess
+
+![Rotation NAV](results/smartbeta_layer_nav.png)
 
 ---
 
-## Cumulative Performance
+# Block 3 · Timing Models
 
-### Layer 1 — Smart Beta Style Rotation
+Supporting single-asset timing models, each self-contained with methodology, backtest, and failure modes in the docstring.
 
-![Smart Beta Layer](results/smartbeta_layer_nav.png)
-
-Top panel: absolute NAV. Bottom panel: cumulative excess vs equal weight. **Rotation CAGR 20.5% vs 18.3%** (+2.2%/yr, 20.5 years). Term-structure analysis in-model: 12M is the sweet spot (2–3M mean-reverts, 6–12M trends persist). Win rate 54.6%, turnover 7.9%/month.
-
-### Layer 2 — Tactical Asset Allocation Overlay
-
-![Allocation Layer](results/allocation_layer_nav.png)
-
-**Tactical CAGR 22.7% vs fixed 5.4% — +17.3%/yr excess** over 11.8 years. Fee honesty in-model: 20.6% gross → 16.5–18.9% net.
-
-### Supporting engines
-
-- **US 10Y rate Z-score** (3-regime, 2014–2026): ![Rate](results/rate_rotation_nav.png)
-- **Annual-MA conditional entry** (94.9% win rate below MA): ![AnnualMA](results/annual_ma_table.png)
-- Asset-level dual momentum: ![DualMomentum](results/dual_momentum_nav.png)
-
-> **Disclaimer:** Historical backtests on total-return indices; not a guarantee of future returns. Every model documents its own failure modes (regime breaks, fee drag, turnover costs) inline — audit before you trust.
-
----
-
-## Model Map
-
-| Layer | Module | Models |
+| Model | Idea | Key stat |
 |---|---|---|
-| 2 | `allocation/` | Risk-parity engine, all-weather fixed weights, momentum overlay |
-| 1 | `style_rotation/` | Momentum (12M), rate Z-score, Pring 6-phase, valuation spread, crowding, pair-switch, alpha-composite, combined |
-| 1 | `timing/` | Dual momentum, annual-MA rule, gold valuation, LPPLS bubbles, bond-futures timing, index valuation signal |
+| Annual-MA dividend rule | Buy below 250-day MA | **94.9%** 1Y win rate, avg +16.8% (514 samples) |
+| Dual momentum (asset) | Absolute + relative momentum, cash fallback | CAGR 22.7% gross / 16.5–18.9% net |
+| US 10Y rate Z-score | 3-regime style switch | +0.4%/yr excess; failure modes documented |
+| Gold valuation | Price vs 5Y valuation band | Entry/exit discipline |
+| LPPLS | Log-periodic bubble detection | Regime flagging |
+| Bond futures timing | Trend filter on CGB futures | — |
 
-Every model opens with: **hypothesis → indicator → signal rules → backtest → failure modes** — auditable without running code.
+<details>
+<summary>Rate Z-score chart</summary>
+
+![Rate](results/rate_rotation_nav.png)
+</details>
+
+<details>
+<summary>Annual-MA table</summary>
+
+![AnnualMA](results/annual_ma_table.png)
+</details>
+
+<details>
+<summary>Dual momentum NAV</summary>
+
+![DualMomentum](results/dual_momentum_nav.png)
+</details>
+
+---
+
+> **Disclaimer:** Historical backtests on total-return indices; not a guarantee of future returns. Every model documents its own failure modes inline.
 
 ## Engineering Principles
 
 1. **No look-ahead.** Rolling windows as-of; total-return indices where dividends matter.
-2. **Honest attribution.** Failure modes and fee drag documented, not hidden.
-3. **Excel-lineage cross-checks** for models prototyped in spreadsheets first.
+2. **Honest attribution.** Fee drag, regime breaks, turnover costs documented, not hidden.
+3. **Excel-lineage cross-checks** for spreadsheet-prototyped models.
 4. **Institutional data hygiene.** Explicit index-code lineage per signal.
 
 ## Author
